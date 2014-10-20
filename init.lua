@@ -1,8 +1,6 @@
 local previous_positions = {}
 
 local helper_name = 'flaming_torch:torch'
-local default_name = 'default:torch'
-local replacer_name = 'air'
 
 -- functions --
 
@@ -11,20 +9,20 @@ local function turn_off_the_light(player)
     if position then
         node = minetest.get_node_or_nil(position)
         if node.name == helper_name then
-            minetest.set_node(position, { name = replacer_name })
+            minetest.set_node(position, { name = 'air' })
         end
         previous_positions[player:get_player_name()] = nil
     end
 end
 
 local function turn_on_the_light(player)
-    if player:get_wielded_item():get_name() == default_name then
+    if player:get_wielded_item():get_name() == core.registered_aliases['torch'] then
         local position = vector.round(player:getpos())
         position.y = position.y + 1 -- torch is on head level
         local prev = previous_positions[player:get_player_name()]
         if not prev or (prev and not vector.equals(position, prev)) then
             node = minetest.get_node_or_nil(position)
-            if node.name == replacer_name then
+            if node.name == 'air' then
                 minetest.set_node(position, { name = helper_name })
             end
             turn_off_the_light(player)
@@ -44,7 +42,7 @@ minetest.register_node(helper_name, {
     climbable = false,
     sunlight_propagates = true,
     drawtype = 'airlike',
-    light_source = minetest.registered_nodes[default_name].light_source,
+    light_source = 14, -- current LIGHT_MAX from default mod
 })
 
 -- events registration --
