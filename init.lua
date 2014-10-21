@@ -15,19 +15,15 @@ local function turn_off_the_light(player)
 end
 
 local function turn_on_the_light(player)
-    if player:get_wielded_item():get_name() == core.registered_aliases['torch'] then
-        local position = vector.round(player:getpos())
-        position.y = position.y + 1 -- torch is on head level
-        local prev = previous_positions[player:get_player_name()]
-        if not prev or (prev and not vector.equals(position, prev)) then
-            if minetest.get_node(position).name == 'air' then
-                minetest.set_node(position, { name = helper_name })
-            end
-            turn_off_the_light(player)
-            previous_positions[player:get_player_name()] = position
+    local position = vector.round(player:getpos())
+    position.y = position.y + 1 -- torch is on head level
+    local prev = previous_positions[player:get_player_name()]
+    if not prev or (prev and not vector.equals(position, prev)) then
+        if minetest.get_node(position).name == 'air' then
+            minetest.set_node(position, { name = helper_name })
         end
-    else
-        turn_off_the_light(player)
+        turn_off_the_light(player) -- remove previous
+        previous_positions[player:get_player_name()] = position
     end
 end
 
@@ -47,7 +43,11 @@ minetest.register_node(helper_name, {
 
 minetest.register_globalstep(function(dtime)
     for _, player in ipairs(minetest.get_connected_players()) do
-        turn_on_the_light(player)
+        if player:get_wielded_item():get_name() == core.registered_aliases['torch'] then
+            turn_on_the_light(player)
+        else
+            turn_off_the_light(player)
+        end
     end
 end)
 
