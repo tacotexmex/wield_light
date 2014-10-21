@@ -1,16 +1,22 @@
+local sounds = {}
 local previous_positions = {}
 
 local helper_name = 'flaming_torch:torch'
 
 -- functions --
 
-local function turn_off_the_light(player)
-    local position = previous_positions[player:get_player_name()]
+local function turn_off_the_light(player, keep_sound)
+    local player_name = player:get_player_name()
+    local position = previous_positions[player_name]
     if position then
         if minetest.get_node(position).name == helper_name then
             minetest.set_node(position, { name = 'air' })
         end
-        previous_positions[player:get_player_name()] = nil
+        previous_positions[player_name] = nil
+    end
+    if not keep_sound and sounds[player_name] then
+        minetest.sound_stop(sounds[player_name])
+        sounds[player_name] = nil
     end
 end
 
@@ -19,10 +25,15 @@ local function turn_on_the_light(player)
     position.y = position.y + 1 -- torch is on head level
     local prev = previous_positions[player:get_player_name()]
     if not prev or (prev and not vector.equals(position, prev)) then
+        keep_sound = false
         if minetest.get_node(position).name == 'air' then
+            keep_sound = true
             minetest.set_node(position, { name = helper_name })
+            if not sounds[player:get_player_name()] then
+                sounds[player:get_player_name()] = minetest.sound_play('torch', { object = player, loop = true })
+            end
         end
-        turn_off_the_light(player) -- remove previous
+        turn_off_the_light(player, keep_sound)
         previous_positions[player:get_player_name()] = position
     end
 end
@@ -41,7 +52,7 @@ minetest.register_node(helper_name, {
 
 -- events registration --
 
-minetest.register_globalstep(function(dtime)
+minetest.register_globalstep(function()
     for _, player in ipairs(minetest.get_connected_players()) do
         if player:get_wielded_item():get_name() == core.registered_aliases['torch'] then
             turn_on_the_light(player)
