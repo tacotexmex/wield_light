@@ -7,8 +7,7 @@ local helper_name = 'flaming_torch:torch'
 local function turn_off_the_light(player)
     local position = previous_positions[player:get_player_name()]
     if position then
-        node = minetest.get_node_or_nil(position)
-        if node.name == helper_name then
+        if minetest.get_node(position).name == helper_name then
             minetest.set_node(position, { name = 'air' })
         end
         previous_positions[player:get_player_name()] = nil
@@ -21,8 +20,7 @@ local function turn_on_the_light(player)
         position.y = position.y + 1 -- torch is on head level
         local prev = previous_positions[player:get_player_name()]
         if not prev or (prev and not vector.equals(position, prev)) then
-            node = minetest.get_node_or_nil(position)
-            if node.name == 'air' then
+            if minetest.get_node(position).name == 'air' then
                 minetest.set_node(position, { name = helper_name })
             end
             turn_off_the_light(player)
