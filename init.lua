@@ -10,7 +10,7 @@ local function turn_off_the_light(player, keep_sound)
     local position = previous_positions[player_name]
     if position then
         if minetest.get_node(position).name == helper_name then
-            minetest.set_node(position, { name = 'air' })
+            minetest.remove_node(position)
         end
         previous_positions[player_name] = nil
     end
@@ -24,7 +24,7 @@ local function turn_on_the_light(player)
     local position = vector.round(player:getpos())
     position.y = position.y + 1 -- torch is on head level
     local prev = previous_positions[player:get_player_name()]
-    if not prev or (prev and not vector.equals(position, prev)) then
+    if not prev or not vector.equals(position, prev) then
         keep_sound = false
         if minetest.get_node(position).name == 'air' then
             keep_sound = true
