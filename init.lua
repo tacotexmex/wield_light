@@ -1,23 +1,25 @@
-local sounds = {}
-local previous_positions = {}
+local sources = {}
 
-local helper_name = 'flaming_torch:torch'
+-- api --
+
+wield_light = {
+  register_source = function(name) sources[name] = true end,
+  unregister_source = function(name) sources[name] = nil end,
+}
 
 -- functions --
 
-local function turn_off_the_light(player, keep_sound)
+local previous_positions = {}
+local helper_name = 'wield_light:helper'
+
+local function turn_off_the_light(player)
   local player_name = player:get_player_name()
   local position = previous_positions[player_name]
-
   if position then
     if minetest.get_node(position).name == helper_name then
       minetest.remove_node(position)
     end
     previous_positions[player_name] = nil
-  end
-  if not keep_sound and sounds[player_name] then
-    minetest.sound_stop(sounds[player_name])
-    sounds[player_name] = nil
   end
 end
 
@@ -25,23 +27,18 @@ local function turn_on_the_light(player)
   local player_name = player:get_player_name()
   local prev = previous_positions[player_name]
   local position = vector.round(player:getpos())
-  position.y = position.y + 1 -- torch is on body level
+  position.y = position.y + 1 -- body level
 
   if not prev or not vector.equals(position, prev) then
-    local keep_sound = false
     if minetest.get_node(position).name == 'air' then
-      keep_sound = true
       minetest.set_node(position, { name = helper_name })
-      if not sounds[player_name] then
-        sounds[player_name] = minetest.sound_play('torch', { object = player, loop = true })
-      end
     end
-    turn_off_the_light(player, keep_sound) -- previous position
+    turn_off_the_light(player) -- turn off for previous position
     previous_positions[player_name] = position
   end
 end
 
--- nodes registration --
+-- registration --
 
 minetest.register_node(helper_name, {
   walkable = false,
@@ -53,11 +50,9 @@ minetest.register_node(helper_name, {
   light_source = 14, -- current LIGHT_MAX from default mod
 })
 
--- events registration --
-
 minetest.register_globalstep(function()
   for _, player in ipairs(minetest.get_connected_players()) do
-    if player:get_wielded_item():get_name() == core.registered_aliases['torch'] then
+    if sources[player:get_wielded_item():get_name()] then
       turn_on_the_light(player)
     else
       turn_off_the_light(player)
@@ -73,3 +68,8 @@ minetest.register_on_shutdown(function()
     turn_off_the_light(player)
   end
 end)
+
+wield_light.register_source('default:torch')
+wield_light.register_source('fire:basic_flame')
+wield_light.register_source('bucket:bucket_lava')
+wield_light.register_source('default:lava_source')
