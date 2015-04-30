@@ -10,5 +10,5 @@ bucket with lava are registered as light sources.
 API
 ---
 
-- `wield_light.register_source(name)`
-- `wield_light.unregister_source(name)`
+- `wield_light.register_source('default:torch')`
+- `wield_light.unregister_source('default:torch')`
