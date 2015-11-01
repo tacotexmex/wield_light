@@ -7,40 +7,12 @@ wield_light = {
   unregister_source = function(name) sources[name] = nil end,
 }
 
--- functions --
-
-local previous_positions = {}
-local helper_name = 'wield_light:helper'
-
-local function turn_off_the_light(player)
-  local player_name = player:get_player_name()
-  local position = previous_positions[player_name]
-  if position then
-    if minetest.get_node(position).name == helper_name then
-      minetest.remove_node(position)
-    end
-    previous_positions[player_name] = nil
-  end
-end
-
-local function turn_on_the_light(player)
-  local player_name = player:get_player_name()
-  local prev = previous_positions[player_name]
-  local position = vector.round(player:getpos())
-  position.y = position.y + 1 -- body level
-
-  if not prev or not vector.equals(position, prev) then
-    if minetest.get_node(position).name == 'air' then
-      minetest.set_node(position, { name = helper_name })
-    end
-    turn_off_the_light(player) -- turn off for previous position
-    previous_positions[player_name] = position
-  end
-end
-
 -- registration --
 
-minetest.register_node(helper_name, {
+local positions = {}
+local HELPER_NAME = 'wield_light:helper'
+
+minetest.register_node(HELPER_NAME, {
   walkable = false,
   pointable = false,
   diggable = false,
@@ -48,25 +20,31 @@ minetest.register_node(helper_name, {
   sunlight_propagates = true,
   drawtype = 'airlike',
   light_source = 14, -- current LIGHT_MAX from default mod
+  on_construct = function(pos)
+    minetest.get_node_timer(pos):start(0.1)
+  end,
+  on_timer = function(pos)
+    if positions[minetest.hash_node_position(pos)] then
+      return true
+    end
+    minetest.remove_node(pos)
+  end,
 })
 
 minetest.register_globalstep(function()
-  for _, player in ipairs(minetest.get_connected_players()) do
+  local new_positions = {}
+  for _, player in pairs(minetest.get_connected_players()) do
     if sources[player:get_wielded_item():get_name()] then
-      turn_on_the_light(player)
-    else
-      turn_off_the_light(player)
+      local pos = vector.round(player:getpos())
+      pos.y = pos.y + 1 -- body level
+      local target_node = minetest.get_node(pos).name
+      if target_node == 'air' and target_node ~= HELPER_NAME then
+        minetest.set_node(pos, { name = HELPER_NAME })
+      end
+      new_positions[minetest.hash_node_position(pos)] = true
     end
   end
-end)
-
-minetest.register_on_dieplayer(turn_off_the_light)
-minetest.register_on_leaveplayer(turn_off_the_light)
-minetest.register_on_respawnplayer(turn_off_the_light)
-minetest.register_on_shutdown(function()
-  for _, player in ipairs(minetest.get_connected_players()) do
-    turn_off_the_light(player)
-  end
+  positions = new_positions
 end)
 
 wield_light.register_source('default:torch')
